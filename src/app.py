@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Character, Planet
+from models import db, User, Character, Planet, Favorite
 #from models import Person
 
 app = Flask(__name__)
@@ -56,6 +56,30 @@ def get_one_characters(id):
     character = Character.query.filter_by( id= id).all()
     one_character = [character.serialize() for character in character]
     return jsonify(one_character)
+
+@app.route('/characters', methods= ['POST'])
+def add_character():
+    body = request.get_json()
+    if not body:
+        return jsonify({"msg": "El cuerpo de la solicitud esta vacio"}), 400
+    if 'name' not in body or 'height' not in body or 'mass' not in body or 'hair_color' not in body or 'skin_color' not in body or 'eye_color' not in body or 'birth_year' not in body or 'gender' not in body:
+        return jsonify({"msg": "Completa los campos"}), 400
+    new_character = Character(
+        name=body['name'],
+        height=body['height'],
+        mass=body['mass'],
+        hair_color=body['hair_color'],
+        skin_color=body['skin_color'],
+        eye_color=body['eye_color'],
+        birth_year=body['birth_year'],
+        gender=body['gender'],
+        planet_id=body.get('planet_id')
+        ) 
+
+    db.session.add(new_character)
+    db.session.commit()
+
+    return jsonify(new_character.serialize()), 201   
 
 @app.route('/planets', methods=['GET'])
 def get_all_planets():

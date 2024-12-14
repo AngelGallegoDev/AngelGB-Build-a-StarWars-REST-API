@@ -11,7 +11,8 @@ class User(db.Model):
     password = db.Column(db.String(80), nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
-    # favorites = db.relationship('Favorite', back_populates='user')
+    # Usamos back_populates para relaciones bidireccionales explícitas
+    favorites = db.relationship('Favorite', back_populates='user')
 
     def __repr__(self):
         return '<User %r>' % self.user_name
@@ -20,11 +21,9 @@ class User(db.Model):
         return {
             "id": self.id,
             "user_name": self.user_name,
-            # do not serialize the password, its a security breach
         }
 
 class Character(db.Model):
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     height = db.Column(db.String(50), nullable=False)
@@ -36,13 +35,11 @@ class Character(db.Model):
     gender = db.Column(db.String(50), nullable=False)
     planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=True)
 
+    # Relación explícita con 'Planet'
+    homeworld = db.relationship('Planet', back_populates='residents')
 
-    # specie_id = db.Column(db.Integer, db.ForeignKey('specie.id'))
-    # specie = db.relationship('Specie', back_populates='characters')
-
-    # homeworld = db.relationship('Planet', back_populates='residents')
-
-    # favorites = db.relationship('Favorite', back_ref='character')
+    # Relación con 'Favorite'
+    favorites = db.relationship('Favorite', back_populates='character')
 
     def __repr__(self):
         return '<Character %r>' % self.id
@@ -58,11 +55,9 @@ class Character(db.Model):
             "eye_color": self.eye_color,
             "birth_year": self.birth_year,
             "gender": self.gender,
-            # do not serialize the password, its a security breach
         }
-    
-class Planet(db.Model):
 
+class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     diameter = db.Column(db.String(50), nullable=False)
@@ -74,10 +69,14 @@ class Planet(db.Model):
     terrain = db.Column(db.String(50), nullable=False)
     surface_water = db.Column(db.String(50), nullable=False)
 
-    residents = db.relationship('Character', backref='homeworld')
+    # Relación explícita con 'Character'
+    residents = db.relationship('Character', back_populates='homeworld')
+
+    # Relación con 'Favorite'
+    favorites = db.relationship('Favorite', back_populates='planet')
 
     def __repr__(self):
-        return '<Character %r>' % self.id
+        return '<Planet %r>' % self.id
 
     def serialize(self):
         return {
@@ -91,5 +90,28 @@ class Planet(db.Model):
             "climate": self.climate,
             "terrain": self.terrain,
             "surface_water": self.surface_water,
-            # do not serialize the password, its a security breach
+        }
+
+class Favorite(db.Model):
+    __tablename__ = 'favorite'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=True)
+    planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=True)
+
+    # Usamos back_populates para relaciones bidireccionales explícitas
+    user = db.relationship('User', back_populates='favorites')
+    character = db.relationship('Character', back_populates='favorites')
+    planet = db.relationship('Planet', back_populates='favorites')
+
+    def __repr__(self):
+        return '<Favorite %r>' % self.id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "character_id": self.character_id,
+            "planet_id": self.planet_id,
         }
