@@ -36,14 +36,118 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
+@app.route('/users', methods=['GET'])
+def get_all_user():
+    users = User.query.all()
+    all_users = [users.serialize() for users in users]
+    return jsonify(all_users), 200
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+@app.route('/users/favorites', methods=['GET'])
+def get_all_userfav():
+    favs = Favorite.query.all()
+    all_favs = [favs.serialize() for favs in favs]
+    return jsonify(all_favs), 200
 
-    return jsonify(response_body), 200
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_planet_fav(planet_id):
+    body = request.get_json()
+    
+    if not body:
+        return jsonify({"msg": "El cuerpo de la solicitud esta vacio"}), 400
+    
+    if 'user_id' not in body:
+        return jsonify({"msg": "Completa los campos"}), 400
+    
+    user = User.query.get(body['user_id'])
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+    
+    exist_fav = Favorite.query.filter_by(user_id=body['user_id'], planet_id=planet_id).first()
+    if exist_fav:
+        return jsonify({"msg": "Este planeta ya está en tus favoritos"}), 400
+    
+    new_planet_fav = Favorite(
+        user_id=body['user_id'],
+        planet_id=planet_id
+    )
+    
+    db.session.add(new_planet_fav)
+    db.session.commit()
+
+    return jsonify(new_planet_fav.serialize()), 201
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def delete_planet_fav(planet_id):
+    body = request.get_json()
+
+    if not body:
+        return jsonify({ "msg": "El cuerpo de la solicitud esta vacip"}), 400
+    
+    if 'user_id' not in body:
+        return jsonify({ "msg" : "Completa los campos"}), 400
+    
+    user = User.query.get(body['user_id'])
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 400
+
+    fav = Favorite.query.filter_by(user_id=body['user_id'], planet_id=planet_id).first()
+    if not fav:
+        return jsonify({"msg": "Este planeta no esta en tus favoritos"}), 400
+
+    db.session.delete(fav)
+    db.session.commit()
+
+    return jsonify({"msg": "Favorito eliminado correctamente"}), 200
+
+@app.route('/favorite/character/<int:character_id>', methods=['POST'])
+def add_character_fav(character_id):
+
+    body = request.get_json()
+    
+    if not body:
+        return jsonify({"msg": "El cuerpo de la solicitud esta vacio"}), 400
+    
+    if 'user_id' not in body:
+        return jsonify({"msg": "Completa los campos"}), 400
+    user = User.query.get(body['user_id'])
+    
+    if not user:
+        return jsonify({"msg": "Usuario no encontrado"}), 404
+    
+    exist_fav = Favorite.query.filter_by(user_id=body['user_id'], character_id=character_id).first()
+    if exist_fav:
+        return jsonify({"msg": "Este planeta ya está en tus favoritos"}), 400
+    
+    new_character_fav = Favorite(
+        user_id=body['user_id'],
+        character_id=character_id
+    )
+    
+    db.session.add(new_character_fav)
+    db.session.commit()
+
+    return jsonify(new_character_fav.serialize()), 201   
+
+@app.route('/favorite/character/<int:character_id>', methods=['DELETE'])
+def delete_character_fav(character_id):
+    body = request.get_json()
+    if not body:
+        return jsonify({"msg" : "El cuerpo de la solicitud esta vacio"}), 400
+    if 'user_id' not in body:
+        return jsonify({"msg" : "Completa los campos"}), 400
+    
+    user = User.query.get(body['user_id'])
+    if not user:
+        return jsonify({"msg" : "Usuario no encontrado"})
+    
+    fav = Favorite.query.filter_by(user_id=body['user_id'], character_id=character_id).first()
+    if not fav:
+        return jsonify({"msg" : "Este personaje no esta en tus favoritos"})
+    
+    db.session.delete(fav)
+    db.session.commit()
+
+    return jsonify({"msg": "Favorito eliminado correctamente"}), 200
 
 @app.route('/characters', methods=['GET'])
 def get_all_characters():
